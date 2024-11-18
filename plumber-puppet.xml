@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="utf-8"?>
+<content xmlns="http://www.w3.org/2005/Atom" type="xhtml">
+<p>I often use <a href="http://puppetlabs.com/">Puppet</a> to manage configuration for servers. One
+thing that makes Puppet a joy to work with are the <a href="http://plan9.bell-labs.com/sys/doc/plumb.html">plumbing</a>
+rules I've put in place to help me navigate puppet manifests. Here
+is a rule I use to match puppet module names:</p>
+<pre><code>puppet = /home/droyo/puppet
+type	is	text
+data	matches	'([a-z0-9][A-Za-z0-9_\-]+)((::[a-z0-9][A-Za-z0-9_\-]+)+)('$addr')?'
+arg	isdir	$puppet/modules/$1
+plumb	start	rc -c 'plumb `{echo '''$dir/manifests/$2.pp$4'''|sed ''s,::,/,g''}'
+</code></pre>
+<p>Here is a rule I use to match <code>puppet:///</code> URLs:</p>
+<pre><code>type	is	text
+data	matches	'puppet:///modules/([a-zA-Z0-9\-_\.]+)/([a-zA-Z0-9\-_/\.]+)'
+arg	isfile $puppet/modules/$1/files/$2
+data	set	$file
+plumb	to	edit
+plumb	client	window $editor
+</code></pre>
+<p>And another for ERB templates:</p>
+<pre><code>type	is	text
+data	matches	'template\([^\)]+\)'
+data	matches	'template\(.([a-zA-Z0-9_\.\-]+)/([a-zA-Z0-9_/\.\-]+).\)'
+arg	isfile	$puppet/modules/$1/templates/$2
+data	set	$file
+plumb	to	edit
+plumb	client	window $editor
+</code></pre>
+<p>These three plumbing rules allow me to quickly navigate large puppet
+code bases from <a href="http://acme.cat-v.org/">Acme</a>. By right-clicking on text like <code>foo::bar</code>,
+<code>template(&quot;foo/bar.cfg.erb&quot;)</code>, or <code>puppet:///foo/bar.txt</code>, the
+relevant file will be opened in a new window in Acme. When people
+watch over my shoulder they find it a little alarming how quickly
+I open up all files referenced in a puppet manifest, but after using
+these rules for about a year I can't imagine living without them.</p>
+
+</content>

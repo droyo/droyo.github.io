@@ -1,0 +1,72 @@
+<?xml version="1.0" encoding="utf-8"?>
+<content xmlns="http://www.w3.org/2005/Atom" type="xhtml">
+<p>I found myself needing to upload a large amount of RPM files to
+artifactory. I don't have maven installed, and am not too familiar
+with it, so I took a look at Artifactory's <a href="http://www.jfrog.com/confluence/display/RTF/Artifactory+REST+API">REST API</a> documentation
+and put together a small shell script to do what I need:</p>
+<pre><code>#!/bin/sh
+# Upload directory to artifactory
+
+die() {
+	printf %s\\n &quot;$*&quot; &gt;&amp;2
+	exit ${rc:-1}
+}
+
+usage() {
+	prog=`basename &quot;$0&quot;`
+	rc=2 die &quot;Usage: ${prog} [-s url] [-u user] [-p pass] srcdir dstdir&quot;
+}
+
+askpass() {
+	read -rsp &quot;$1: &quot; pass
+	echo&gt;/dev/tty
+	printf '%s' &quot;$pass&quot;
+}
+
+# Remove leading and trailing slashes
+trim() {
+	printf %s &quot;$1&quot; | sed 's,^/\+,,;s,/\+$,,'
+}
+
+upload() {
+	src=&quot;$1&quot;; shift
+	dst=`trim &quot;$1&quot;`; shift
+
+	status=`(cd &quot;$src&quot; &amp;&amp; tar c .) | upload_tar &quot;$url/$dst/.tar&quot;`
+	case &quot;$status&quot; in
+	(200) return 0;;
+	(403) die &quot;403 Forbidden&quot; ;;
+	(401) die &quot;401 Invalid credentials&quot; ;;
+	(*) die &quot;Error code ${status}&quot;;;
+	esac
+}
+
+upload_tar() {
+	dst=&quot;$1&quot;; shift
+	
+	auth=&quot;${user}:${pass}&quot;
+	curl -o /dev/null -# -u &quot;$auth&quot; -X PUT -w '%{http_code}' \
+		-H 'X-Explode-Archive: true' \
+		--data-binary @/dev/stdin &quot;$dst&quot;
+}
+
+user=&quot;$USER&quot;
+url=&quot;https://artifactory.example.com&quot;
+
+while getopts :u:p:s: arg
+do case &quot;$arg&quot; in
+	(u) user=&quot;$OPTARG&quot;           ;;
+	(p) pass=&quot;$OPTARG&quot;           ;;
+	(s) url=`trim &quot;$OPTARG&quot;` ;;
+	(*) usage                    ;;
+esac; done
+shift `expr $OPTIND - 1`; unset OPTIND
+
+[ &quot;$pass&quot; ] || pass=`askpass &quot;Artifactory password for ${user}&quot;`
+[ $# -eq 2 ] || usage
+
+upload &quot;$@&quot;
+</code></pre>
+<p>I believe most of the REST API in artifactory is restricted in the free version. However, if you use Artifactory pro, this script might save you a bit of time.</p>
+
+</content>

@@ -1,0 +1,175 @@
+<?xml version="1.0" encoding="utf-8"?>
+<content xmlns="http://www.w3.org/2005/Atom" type="xhtml">
+<p>I recently spent some effort to overhaul the way I organize my email,
+specifically email for the many mailing lists I subscribe to. I'm pretty
+happy with the result, and it helped me subscribe to more mailing lists
+than I had before. In most of the ways that I care about, my mailing list
+experience is better than my experience with most web forums, now.</p>
+<h2 id="sorting-mailing-list-e-mails-hierarchically"><a class="anchor" aria-hidden="true" href="#sorting-mailing-list-e-mails-hierarchically"></a>Sorting mailing list e-mails hierarchically</h2>
+<p>Anyone who ever used
+<a href="https://en.wikipedia.org/wiki/Network_News_Transfer_Protocol">NNTP</a> can
+recall the dotted, hierarchical naming scheme for news groups:</p>
+<pre><code>comp.lang.lisp
+sci.math
+rec.arts.sf.movies
+</code></pre>
+<p>... and so on. This naming scheme means, to some degree, that groups
+with related content will share a common naming prefix. So, with an
+appropriately capable news reader, you could, for example, view content from
+all programming-language related news groups by matching groups against the
+pattern <code>comp.lang.*</code>.</p>
+<p>Most mailing lists will contain a &quot;List ID&quot; header. For example, all mails
+from the Linux kernel's &quot;netdev&quot; mailing list will contain the header:</p>
+<pre><code>List-ID: &lt;netdev.vger.kernel.org&gt;
+</code></pre>
+<p>If we can reverse the List ID, then mailing lists from the same organization
+will be naturally grouped together:</p>
+<pre><code>org.kernel.vger.netdev
+org.kernel.vger.linux-fsdevel
+org.kernel.vger.kvm
+net.sourceforge.lists.v9fs-developer
+</code></pre>
+<p>Now, the naming is not quite as content-based as news groups; rather,
+mailing lists run by the same organization will have the same prefix. This
+is good enough for my needs. I am a Fastmail customer, and they allow
+you to sort incoming and outgoing mail with the <a href="https://en.wikipedia.org/wiki/Sieve_(mail_filtering_language)">Sieve mail filtering
+language</a>. So
+I added the following custom action:</p>
+<pre><code>if exists &quot;list-id&quot; {
+  if header :regex &quot;list-id&quot; &quot;&lt;(([^.]+)\\.)?([^.]+\\.)?([^.]+\\.)?([^.]+\\.)?([^.]+\\.)?([^.]+\\.)?([^.]+\\.)?([^.]+\\.)?([^.]+)&gt;&quot; {
+    set :lower &quot;folder&quot; &quot;ml.${9}${8}${7}${6}${5}${4}${3}${2}&quot;;
+    fileinto :create &quot;INBOX.${folder}&quot;;
+    stop;
+  }
+}
+</code></pre>
+<p>The regular expression is a bit ugly. Sieve programs often cross organizational
+boundaries; here, I, the user/customer, am writing a program that will
+run on another organization (Fastmail)'s servers. So, unsurprisingly, the
+language's capabilities are very limited, to make it harder for a malicious
+or buggy program to compromise the service. Notably, the language has no loops
+or recursion.</p>
+<p>The regular expression above takes a string such as</p>
+<pre><code>&lt;netdev.vger.kernel.org&gt;
+</code></pre>
+<p>and cuts it up into these groups, numbered 1 through 10:</p>
+<pre><code>((netdev)) (.vger) (.kernel) () () () () () (.org)
+</code></pre>
+<p>Then the expression</p>
+<pre><code>set :lower &quot;folder&quot; &quot;ml.${9}${8}${7}${6}${5}${4}${3}${2}&quot;;
+</code></pre>
+<p>creates the variable <code>folder</code> with the groups substituted:</p>
+<pre><code>ml.kernel.vger.netdev
+</code></pre>
+<p>Note that I leave out the final group. This usually contains a top-level domain
+name, like <code>org</code> or <code>net</code> or <code>com</code>. I may or may not revert that decision,
+but I do that because there is a very small group of commonly-used TLDs and
+I didn't see a point in grouping all messages that share the same TLD.</p>
+<p>Finally, the expression</p>
+<pre><code>fileinto :create &quot;INBOX.${folder}&quot;;
+</code></pre>
+<p>Files the e-mail into the constructed folder, creating the folder if it does not
+already exist. In Fastmail, a dot (<code>.</code>) is the folder separator. With this filter
+in place, plus an extra filter for mailing lists which use the <code>Mailing-List</code> header
+instead of <code>List-ID</code>, all of my mailing list e-mail is automatically sorted into
+a nice hierarchy:</p>
+<pre><code>ml/
+	kernel/
+		vger/
+			linux-fsdevel
+			linux-bluetooth
+			netdev
+	ocaml/
+		discuss/
+			community/
+			learning/
+			ecosystem/
+	googlegroups/
+		plan9port-dev
+		golang-nuts
+</code></pre>
+<p>Occasionally I view one of these folders, but more commonly, I use Fastmail's
+&quot;saved searches&quot; feature to view many lists at once. For example, I have a
+few searches such as:</p>
+<pre><code>in:ml/* is:unread after:1d
+in:ml/kernel/* is:unread after:1d
+in:ml/ocaml/* is:unread after:7d
+(in:kernel/* OR in:sourceforge/*) after:1d is:unread
+</code></pre>
+<p>If there is a thread that I want to follow, I 'pin' it, and then it will
+show up in my &quot;pinned threads&quot; view. I have not currently found a way to be
+notified of messages to pinned conversations.</p>
+<p>That's it! I was doing something similar before, filing mailing list emails into
+a folder based on the name of the list, but I was not reversing the domain name.
+Such a small change has increased the number of lists I can subscribe to without
+being overwhelmed.</p>
+<h2 id="email-versus-web-forums"><a class="anchor" aria-hidden="true" href="#email-versus-web-forums"></a>Email versus web forums</h2>
+<p>Email is old, and it shows. However, with the right client and filters, it can
+be very pleasant to use. I used to follow several <a href="https://www.discourse.org/">discourse</a>-based
+forums through my web browser. However, discourse supports receiving and
+posting forum messages over e-mail, so after implementing my filters, I enabled this feature
+for the <a href="https://discuss.ocaml.org">discuss.ocaml.org</a> forums. Since doing so, I prefer the email
+experience, and almost never use the web interface.</p>
+<h3 id="the-content-is-immutable"><a class="anchor" aria-hidden="true" href="#the-content-is-immutable"></a>The content is immutable</h3>
+<p>Once an e-mail is delivered to you, the sender cannot &quot;take it back&quot; or modify
+it. As long as you don't delete your e-mails, the message is never lost. While
+mutability is a feature for something like a wiki, for open discussions it
+is important that a message cannot be modified or redacted after the fact.</p>
+<h3 id="you-can-compose-cross-forum-views"><a class="anchor" aria-hidden="true" href="#you-can-compose-cross-forum-views"></a>You can compose cross-forum views</h3>
+<p>A web forum will never be able to compete with this feature. In the same
+window, I can view messages from different mailing lists, run by different
+organizations, who have no knowledge of each other.</p>
+<h3 id="most-content-is-plain-text"><a class="anchor" aria-hidden="true" href="#most-content-is-plain-text"></a>Most content is plain text</h3>
+<p>Depending on who you are, this may be a pro or con for email. For me,
+I prefer plain text for most communication. Images and such can still
+be provided as attachments. Many clients will send HTML emails as
+well, but it is frowned upon on many of the lists I follow.</p>
+<h2 id="room-for-improvement"><a class="anchor" aria-hidden="true" href="#room-for-improvement"></a>Room for improvement</h2>
+<p>What I have is not perfect. I'm happy with it, but there are a few features I'd like
+to have.</p>
+<h3 id="search-based-on-threads-not-messages"><a class="anchor" aria-hidden="true" href="#search-based-on-threads-not-messages"></a>Search based on threads, not messages</h3>
+<p>In my saved searches, I tried to filter out code reviews by including the term:</p>
+<pre><code>-subject:*PATCH*
+</code></pre>
+<p>unfortunately, this rarely works, because it is common for replies to the
+message to modify the subject and omit the <code>PATCH</code> phrase, like:</p>
+<pre><code>[PATCH BlueZ 1/3] storage: Add support for STATE_DIRECTORY environment variable
+→ RE: [BlueZ,1/3] storage: Add support for STATE_DIRECTORY environment variable
+</code></pre>
+<p>I could try to chase these conventions and build more complicated filters,
+but it would be nice to include or exclude a thread if <em>any</em> of its messages
+match the filter.</p>
+<h3 id="limiting-the-results-per-folder"><a class="anchor" aria-hidden="true" href="#limiting-the-results-per-folder"></a>Limiting the results per folder</h3>
+<p>It would be really nice to have a view that just shows the most recent N
+unread messages from each folder. This would give me an overview of every
+list without the more active lists dominating the results. This is similar
+to what the <a href="https://fraidyc.at/">Fraidycat</a> extension does for feeds,
+giving each feed the same amount of real estate regardless of how active it is.</p>
+<h3 id="better-control-over-notifications"><a class="anchor" aria-hidden="true" href="#better-control-over-notifications"></a>Better control over notifications</h3>
+<p>The fastmail web &amp; mobile clients allow me to be notified when messages are
+sent to a specific label, or from specific people, but I can't be notified
+of new messages in a specific thread, or messages matching a specific search
+filter.</p>
+<h3 id="a-proper-desktop-client"><a class="anchor" aria-hidden="true" href="#a-proper-desktop-client"></a>A proper desktop client</h3>
+<p>Fastmail's mobile and web clients are quite nice, so I have been dragging my
+feet here. I still find myself composing messages in a text editor and then
+copying it into Fastmail's web interface. I would like to setup a proper mail
+client on my desktop, but there are so many, and I try not to customize the
+software I use too much, that I am taking my time to find one with default
+behavior that I like. A mail client may be able to fill some of the holes I've
+described above.</p>
+<h2 id="crazy-idea---mailbox-as-a-web-forum"><a class="anchor" aria-hidden="true" href="#crazy-idea---mailbox-as-a-web-forum"></a>Crazy idea - mailbox as a web forum</h2>
+<p>A specialized mail client could provide a web forum-like user interface for
+the mailing list posts in a user's mailbox. Mailboxes could be supplemented
+with mailing lists archives, to show threads which existed before the user
+subscribed to the list. There could be one section per list id, grouped
+similarly to what my sieve filter accomplishes. The user could also create
+&quot;dynamic&quot; boards, which are the union of all messages in one or more folders,
+or all messages which match some search expression.</p>
+<p>Is this a good idea? I'm not sure! The end result seems like it would
+be useful, but I think there would be a lot of details that could end
+up being a huge time sink. Even something as simple as deciding what
+messages are part of the same thread, is <a href="https://www.jwz.org/doc/threading.html">not as simple as you would
+think.</a></p>
+
+</content>

@@ -1,0 +1,90 @@
+<?xml version="1.0" encoding="utf-8"?>
+<feed xmlns="http://www.w3.org/2005/Atom">
+ <title>aqwari.net</title>
+ <link href="https://blog.aqwari.net"/>
+ <updated>2024-11-18T11:21:19-00:00</updated>
+ <author>
+   <name>David Arroyo</name>
+ </author>
+ <id>https://blog.aqwari.net/atom.xml</id>
+ <entry>
+   <title>Composing linux namespaces with GNU guix</title>
+   <content type="xhtml" src="http://localhost:8080//guix/namespaces.xml" />
+   <id>https://blog.aqwari.net//guix/namespaces</id>
+   <link rel="alternate" type="html" href="/guix/namespaces" />
+   <updated>2022-04-23T23:01:13Z</updated>
+   <summary>Look ma, no symlinks!</summary>
+ </entry>
+ <entry>
+   <title>Sorting mailing list posts</title>
+   <content type="xhtml" src="http://localhost:8080//sieve-mailing-lists.xml" />
+   <id>https://blog.aqwari.net//sieve-mailing-lists</id>
+   <link rel="alternate" type="html" href="/sieve-mailing-lists" />
+   <updated>2022-04-16T17:46:37Z</updated>
+   <summary>Making mailing lists better than forums</summary>
+ </entry>
+ <entry>
+   <title>Writing a 9P server from scratch, pt 3: server plumbing</title>
+   <content type="xhtml" src="http://localhost:8080//9p/server.xml" />
+   <id>https://blog.aqwari.net//9p/server</id>
+   <link rel="alternate" type="html" href="/9p/server" />
+   <updated>2016-08-20T12:00:00-05:00</updated>
+   <summary>Walking and talking like a 9P server</summary>
+ </entry>
+ <entry>
+   <title>Writing a 9P server from scratch, pt 2: Protocol parsing</title>
+   <content type="xhtml" src="http://localhost:8080//9p/parsing.xml" />
+   <id>https://blog.aqwari.net//9p/parsing</id>
+   <link rel="alternate" type="html" href="/9p/parsing" />
+   <updated>2015-09-29T12:00:00-05:00</updated>
+   <summary>Decoding the 9P message format</summary>
+ </entry>
+ <entry>
+   <title>Writing a 9P server from scratch</title>
+   <content type="xhtml" src="http://localhost:8080//9p/index.xml" />
+   <id>https://blog.aqwari.net//9p/index</id>
+   <link rel="alternate" type="html" href="/9p/index" />
+   <updated>2015-09-25T12:00:00-05:00</updated>
+   <summary>Using the plan9 file system protocol</summary>
+ </entry>
+ <entry>
+   <title>XML Schema and Go</title>
+   <content type="xhtml" src="http://localhost:8080//xml-schema-go.xml" />
+   <id>https://blog.aqwari.net//xml-schema-go</id>
+   <link rel="alternate" type="html" href="/xml-schema-go" />
+   <updated>2015-03-12T21:31:15-05:00</updated>
+   <summary>Generating Go source from XML schema</summary>
+ </entry>
+ <entry>
+   <title>Don&apos;t be afraid to panic</title>
+   <content type="xhtml" src="http://localhost:8080//go-panic.xml" />
+   <id>https://blog.aqwari.net//go-panic</id>
+   <link rel="alternate" type="html" href="/go-panic" />
+   <updated>2015-02-22T21:31:35-05:00</updated>
+   <summary>Using panic and recover for clearer code</summary>
+ </entry>
+ <entry>
+   <title>Bulk-upload files to artifactory</title>
+   <content type="xhtml" src="http://localhost:8080//artifactory-dircp.xml" />
+   <id>https://blog.aqwari.net//artifactory-dircp</id>
+   <link rel="alternate" type="html" href="/artifactory-dircp" />
+   <updated>2014-04-26T18:18:11-05:00</updated>
+   <summary>Simple shell script to upload directories to Artifactory</summary>
+ </entry>
+ <entry>
+   <title>Plumbing rules for Puppet manifests</title>
+   <content type="xhtml" src="http://localhost:8080//plumber-puppet.xml" />
+   <id>https://blog.aqwari.net//plumber-puppet</id>
+   <link rel="alternate" type="html" href="/plumber-puppet" />
+   <updated>2014-03-03T14:42:28-05:00</updated>
+   <summary>Quickly navigating puppet modules with Acme</summary>
+ </entry>
+ <entry>
+   <title>Aqwari.net Go libraries</title>
+   <content type="xhtml" src="http://localhost:8080//golibs.xml" />
+   <id>https://blog.aqwari.net//golibs</id>
+   <link rel="alternate" type="html" href="/golibs" />
+   <updated>2013-01-17T13:42:18-05:00</updated>
+   <summary></summary>
+ </entry>
+</feed>

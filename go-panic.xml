@@ -1,0 +1,135 @@
+<?xml version="1.0" encoding="utf-8"?>
+<content xmlns="http://www.w3.org/2005/Atom" type="xhtml">
+<p>In <a href="http://golang.org">Go</a>, functions that can fail return an error value, that
+will be non-nil if something went wrong. It is up to the caller of
+a function to handle any errors that may occur. In the wild, such
+Go code looks like this:</p>
+<pre><code>x, err := strconv.Atoi(input)
+if err != nil {
+	// handle or return the error
+}
+</code></pre>
+<p>While I have never found this too troublesome, if your most common
+way to handle an error is by returning it, you will type more in
+Go than you do in a language with exceptions, such as python.  There
+are a few techinques described in the blog post &quot;<a href="http://blog.golang.org/errors-are-values">Errors are values</a>&quot;
+that can help reduce some of the repetition.</p>
+<p>Go has a seldom-used exception system in the form of three functions:
+<a href="http://blog.golang.org/defer-panic-and-recover">defer, panic, and recover</a>. These three functions work together
+to provide something like exceptions for Go:</p>
+<ul>
+<li><code>defer()</code> ensures that a function is called when the current
+function is exited.</li>
+<li><code>panic()</code> tells the Go runtime to begin unwinding the stack,
+calling deferred functions as as it exits each function.</li>
+<li><code>recover()</code>, when called from within a <code>defer()</code>, stops any
+stack unwinding in process as the result of a panic.</li>
+</ul>
+<p>It is not as flexible as the exception systems in other languages,
+and is intended for truly exceptional errors, or programmer mistakes,
+where the best response is to crash the program. However, sometimes
+the behavior of <code>defer</code>, <code>panic</code>, and <code>recover</code> can be useful for handling
+more routine errors. When developing the <a href="http://godoc.org/aqwari.net/xml/xsd">xsd</a> package, I defined
+a <code>walk</code> function to walk a tree of xml elements:</p>
+<pre><code>func (el *xmltree.Element) Walk(func (*xmltree.Element) error) error
+</code></pre>
+<p>I quickly found that every time I encountered an error, I would
+immediately stop parsing and &quot;bubble up&quot; the error, adding annotations
+along the way:</p>
+<pre><code>var result []Element
+err := root.Walk(func(el *xmltree.Element) {
+	...
+	var v Element
+	max := el.Attr(&quot;maxOccurs&quot;)
+	if max == &quot;unbounded&quot; {
+		v.Plural = true
+	} else if max != &quot;&quot; {
+		i, err := strconv.Atoi(max)
+		if err != nil {
+			return fmt.Errorf(&quot;Invalid maxOccurs %q: %v&quot;,
+				max, err)
+		}
+		v.Plural = (i &gt; 1)
+	}
+	result = append(result, v)
+	return nil
+})
+return result, err
+</code></pre>
+<p>I soon found the repetitive error checking overwhelming. I quickly rewrote
+the code to use <code>panic</code>.</p>
+<pre><code>func stop(msg string) {
+	panic(parseError{message: msg})
+}
+
+func walk(root *xmltree.Element, fn func(*xmltree.Element)) {
+	defer func() {
+		if r := recover(); r != nil {
+			if err, ok := r.(parseError); ok {
+				err.path = append(err.path, root)
+				panic(err)
+			} else {
+				panic(r)
+			}
+		}
+	}()
+	for i := 0; i &lt; len(root.Children); i++ {
+		fn(&amp;root.Children[i])
+	}
+}
+
+// defer catchParseError(&amp;err)
+func catchParseError(err *error) {
+	if r := recover(); r != nil {
+		*err = r.(parseError)
+	}
+}
+</code></pre>
+<p>I then wrote several wrappers around library functions that would panic
+instead of returning an error:</p>
+<pre><code>func parseInt(s string) int {
+	switch s {
+	case &quot;&quot;:
+		return 0
+	case &quot;unbounded&quot;:
+		return -1
+	}
+	n, err := strconv.Atoi(s)
+	if err != nil {
+		stop(err.Error())
+	}
+	return n
+}
+</code></pre>
+<p>The result was less cluttered parsing code:</p>
+<pre><code>var result []Element
+walk(root, func(el *xmltree.Element) {
+	var v Element
+	if max := parseInt(el.Attr(&quot;maxOccurs&quot;)); max &lt; 0 || max &gt; 1 {
+		v.Plural = true
+	}
+	result = append(result, v)
+})
+return result
+</code></pre>
+<p>This works because in this use case, all errors are handled in the
+same way, and because recursion is heavily used while parsing due
+to the deep nesting present in XML schema documents. Because all
+of the parsing functions went from returning a result and an error,
+to returning a single result, the functions became much more
+composable, almost like commands in a unix pipeline. Compare:</p>
+<pre><code>// With explicit error returns
+elem, err := parseElement(root)
+if err != nil {
+	return fmt.Errorf(&quot;Error parsing element %s: %v&quot;, root.Name.Local, err)
+}
+t.Elements = append(t.Elements, elem)
+
+// With &quot;exceptions&quot;
+t.Elements = append(t.Elements, parseElement(root))
+</code></pre>
+<p>While the conventional advice around <code>defer</code>, <code>panic</code> and <code>recover</code>
+is not to use them, recognizing cases where they are appropriate
+can lead to clearer and more concise code.</p>
+
+</content>
